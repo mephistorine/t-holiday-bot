@@ -50,7 +50,7 @@ declare module "fastify" {
 const fastify = createFastify({
   logger: {
     enabled: true,
-    file: "./app.log",
+    file: process.env.NODE_ENV === "production" ? "./app.log" : undefined,
   },
 })
 
