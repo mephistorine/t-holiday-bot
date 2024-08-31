@@ -52,7 +52,8 @@ async function fetchHolydays(
 
       const nameDays = holydays.items
         .find((d) => d.includes("Именины у"))
-        ?.split(", ")
+        ?.replace("Именины у", "")
+        .split(", ")
 
       const events = select.extract({
         items: [
@@ -158,6 +159,7 @@ export default async function (fastify: FastifyInstance) {
       }
 
       const today = new Date()
+      fastify.log.info(`Получаем праздники для ${today.toISOString()}`)
       /*const cacheKey = createRedisKey(today)
       const isNoCache = Boolean(
         (
