@@ -65,7 +65,7 @@ async function fetchHolydays(
 
       return right({
         holydays: holydays.items.filter((d) => !d.includes("Именины у")),
-        events: events.items,
+        events: events.items.map(i => i.replace("• ", "")),
         nameDays: nameDays ?? [],
       } as HolydaysData)
     }),
