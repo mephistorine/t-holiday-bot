@@ -6,7 +6,7 @@
     "compile": "tsc",
     "compile:watch": "tsc -w",
     "dev": "nodemon --watch src --watch test --ext ts,json --exec 'pnpm bundle && pnpm start'",
-    "debug": "yarn build && node --enable-source-maps --inspect-brk ./dist/index.js",
+    "debug": "pnpm build && node --enable-source-maps --inspect-brk ./dist/index.js",
     "debug:test": "node --inspect-brk ./node_modules/.bin/jest --runInBand .",
     "fmt": "prettier . --write",
     "fmt:check": "prettier . --check",
@@ -15,7 +15,7 @@
     "start": "node --enable-source-maps ./dist/index.js",
     "test": "jest --runInBand ."
   },
-  "main": "dist/src/index.js",
+  "main": "dist/index.js",
   "author": "Sam Bulatov <mephistorine@gmail.com>",
   "license": "MIT",
   "devDependencies": {
@@ -46,10 +46,5 @@
     "cheerio": "1.0.0",
     "fastify": "4.28.1",
     "redis": "4.7.0"
-  },
-  "engines": {
-    "node": ">=20",
-    "pnpm": ">=9"
-  },
-  "packageManager": "pnpm@9"
+  }
 }
