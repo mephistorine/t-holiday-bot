@@ -12,6 +12,8 @@ services:
       - 3000:3000
     networks:
       - overlay
+    depends_on:
+      - redis
     environment:
       HOST: 0.0.0.0
       NODE_ENV: production
