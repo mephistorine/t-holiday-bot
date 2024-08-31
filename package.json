@@ -46,5 +46,9 @@
     "cheerio": "1.0.0",
     "fastify": "4.28.1",
     "redis": "4.7.0"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
   }
 }
