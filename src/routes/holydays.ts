@@ -1,4 +1,4 @@
-import {chain, Either, fromPromise, fromTry, right} from "@sweet-monads/either"
+import {chain, Either, fromPromise, right} from "@sweet-monads/either"
 import * as cheerio from "cheerio"
 import type {FastifyInstance} from "fastify"
 
@@ -132,7 +132,7 @@ const HolydaysHeadersSchema = {
 }
 
 export default async function (fastify: FastifyInstance) {
-  const redisClient = fastify.redis
+  // const redisClient = fastify.redis
   fastify.post(
     "/holydays-time-command-webhook",
     {
@@ -158,7 +158,7 @@ export default async function (fastify: FastifyInstance) {
       }
 
       const today = new Date()
-      const cacheKey = createRedisKey(today)
+      /*const cacheKey = createRedisKey(today)
       const isNoCache = Boolean(
         (
           request.body as {
@@ -182,7 +182,7 @@ export default async function (fastify: FastifyInstance) {
         return createTimeReplyMessage(
           createMessageContentFromHolydaysData(result.value, today),
         )
-      }
+      }*/
 
       const requestResult = await fetchHolydays(today)
 
@@ -196,12 +196,12 @@ export default async function (fastify: FastifyInstance) {
         )
       }
 
-      redisClient.set(
+      /*redisClient.set(
         cacheKey,
         JSON.stringify(requestResult.value),
         "EX",
         172_800,
-      )
+      )*/
 
       request.log.info("Данные успешно запрошены")
       return createTimeReplyMessage(

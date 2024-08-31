@@ -1,6 +1,6 @@
 import fastifyEnv from "@fastify/env"
 import fastifyFormbody from "@fastify/formbody"
-import fastifyRedis from "@fastify/redis"
+// import fastifyRedis from "@fastify/redis"
 import fastifySensible from "@fastify/sensible"
 import createFastify from "fastify"
 
@@ -55,9 +55,9 @@ const fastify = createFastify({
 })
 
 fastify
-  .register(fastifyRedis, {
+  /*.register(fastifyRedis, {
     url: process.env.REDIS_URL,
-  })
+  })*/
   .register(fastifyEnv, {schema: EnvSchema})
   .register(fastifyFormbody)
   .register(fastifySensible)
