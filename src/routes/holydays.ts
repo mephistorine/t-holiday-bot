@@ -96,6 +96,7 @@ function createRedisKey(date: Date): string {
 
 function createTimeReplyMessage(text: string) {
   return {
+    icon_url: "https://storage.yandexcloud.net/mephistorine-pocketbase-test/TwemojiPartyPopper%201%20(1).png",
     response_type: "in_channel",
     text,
   }
