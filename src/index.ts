@@ -1,10 +1,10 @@
 import fastifyEnv from "@fastify/env"
 import fastifyFormbody from "@fastify/formbody"
-// import fastifyRedis from "@fastify/redis"
+import fastifyRedis from "@fastify/redis"
 import fastifySensible from "@fastify/sensible"
 import createFastify from "fastify"
 
-import holydaysRouteHandler from "./routes/holydays"
+import holydaysRouteHandler from "./routes/holidays"
 import healthRouteHandler from "./routes/health"
 
 const port = process.env.PORT ? Number(process.env.PORT) : 3000
@@ -55,9 +55,9 @@ const fastify = createFastify({
 })
 
 fastify
-  /*.register(fastifyRedis, {
+  .register(fastifyRedis, {
     url: process.env.REDIS_URL,
-  })*/
+  })
   .register(fastifyEnv, {schema: EnvSchema})
   .register(fastifyFormbody)
   .register(fastifySensible)

@@ -6,18 +6,5 @@ services:
     networks:
       - overlay
     environment:
-
-  app:
-    build: .
-    ports:
-      - 3000:3000
-    networks:
-      - overlay
-    depends_on:
-      - redis
-    environment:
-      HOST: 0.0.0.0
-      NODE_ENV: production
-      REDIS_URL: redis://redis:6379/0
 networks:
   overlay:

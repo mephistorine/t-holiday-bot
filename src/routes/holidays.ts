@@ -1,5 +1,6 @@
-import {chain, Either, fromPromise, right} from "@sweet-monads/either"
+import {chain, Either, fromPromise, fromTry, right} from "@sweet-monads/either"
 import * as cheerio from "cheerio"
+import {CronJob} from "cron"
 import type {FastifyInstance} from "fastify"
 
 const MONTHS: readonly string[] = [
@@ -17,15 +18,15 @@ const MONTHS: readonly string[] = [
   "dekabr",
 ]
 
-type HolydaysData = {
-  readonly holydays: readonly string[]
+type HolidaysData = {
+  readonly holidays: readonly string[]
   readonly events: readonly string[]
   readonly nameDays: readonly string[]
 }
 
-async function fetchHolydays(
+async function fetchHolidays(
   targetDate: Date,
-): Promise<Either<unknown, HolydaysData>> {
+): Promise<Either<unknown, HolidaysData>> {
   const monthName = MONTHS[targetDate.getMonth()]
 
   return fromPromise(
@@ -41,7 +42,7 @@ async function fetchHolydays(
     chain(async (documentRawHtml) => {
       const select = cheerio.load(documentRawHtml)
 
-      const holydays = select.extract({
+      const holidays = select.extract({
         items: [
           {
             selector: `[itemprop="acceptedAnswer"] [itemprop="text"], [itemprop="suggestedAnswer"] [itemprop="text"]`,
@@ -50,7 +51,7 @@ async function fetchHolydays(
         ],
       })
 
-      const nameDays = holydays.items
+      const nameDays = holidays.items
         .find((d) => d.includes("Именины у"))
         ?.replace("Именины у", "")
         .split(", ")
@@ -65,23 +66,23 @@ async function fetchHolydays(
       })
 
       return right({
-        holydays: holydays.items.filter((d) => !d.includes("Именины у")),
+        holidays: holidays.items.filter((d) => !d.includes("Именины у")),
         events: events.items.map(i => i.replace("• ", "")),
         nameDays: nameDays ?? [],
-      } as HolydaysData)
+      } as HolidaysData)
     }),
   )
 }
 
-function createMessageContentFromHolydaysData(
-  data: HolydaysData,
+function createMessageContentFromHolidaysData(
+  data: HolidaysData,
   targetDate: Date,
 ): string {
   return [
     `## Праздники ${targetDate.toLocaleDateString("ru-RU", {
       dateStyle: "medium",
     })}`,
-    data.holydays.map((i) => `- ${i}`).join("\n"),
+    data.holidays.map((i) => `- ${i}`).join("\n"),
     "### Именины",
     data.nameDays.map((d) => `- ${d}`).join("\n"),
     "### События в истории",
@@ -107,14 +108,14 @@ enum ErrorCode {
   SiteParse = "SITE_PARSE_ERROR",
 }
 
-const HolydaysBodySchema = {
+const HolidaysBodySchema = {
   type: "object",
   properties: {
     text: {type: "string"},
   },
 }
 
-const HolydaysResponseSchema = {
+const HolidaysResponseSchema = {
   200: {
     type: "object",
     required: ["response_type", "text"],
@@ -125,7 +126,7 @@ const HolydaysResponseSchema = {
   },
 }
 
-const HolydaysHeadersSchema = {
+const HolidaysHeadersSchema = {
   type: "object",
   properties: {
     Authorization: {type: "string"},
@@ -134,17 +135,46 @@ const HolydaysHeadersSchema = {
 }
 
 export default async function (fastify: FastifyInstance) {
-  // const redisClient = fastify.redis
-  fastify.post(
-    "/holydays-time-command-webhook",
-    {
-      schema: {
-        body: HolydaysBodySchema,
-        response: HolydaysResponseSchema,
-        headers: HolydaysHeadersSchema,
-      },
+  const redisClient = fastify.redis
+
+  const job = CronJob.from({
+    // Every night at 00:00
+    cronTime: "0 0 * * *",
+    timeZone: "Europe/London",
+    start: true,
+    onTick: async () => {
+      const now = new Date()
+      const holidays = await fetchHolidays(now)
+
+      if (holidays.isLeft()) {
+        fastify.log.error("[Cron] Не удалось закешировать праздники", holidays.value)
+        return
+      }
+
+      const cacheKey = createRedisKey(now)
+
+      redisClient.set(
+        cacheKey,
+        JSON.stringify(holidays.value),
+        "EX",
+        172_800,
+      )
+
+      fastify.log.info(`[Cron] Праздники успешно закешированы по пути ${cacheKey}`)
+    }
+  })
+
+  job.start()
+
+  fastify.route({
+    method: "POST",
+    url: "/holidays-time-command-webhook",
+    schema: {
+      body: HolidaysBodySchema,
+      response: HolidaysResponseSchema,
+      headers: HolidaysHeadersSchema,
     },
-    async (request) => {
+    handler: async (request) => {
       const {NODE_ENV, TIME_TOKEN} = fastify.config
 
       if (NODE_ENV === "production") {
@@ -161,7 +191,7 @@ export default async function (fastify: FastifyInstance) {
 
       const today = new Date()
       fastify.log.info(`Получаем праздники для ${today.toISOString()}`)
-      /*const cacheKey = createRedisKey(today)
+      const cacheKey = createRedisKey(today)
       const isNoCache = Boolean(
         (
           request.body as {
@@ -172,7 +202,7 @@ export default async function (fastify: FastifyInstance) {
       const cachedData = await redisClient.get(cacheKey)
 
       if (!isNoCache && cachedData) {
-        const result = fromTry(() => JSON.parse(cachedData) as HolydaysData)
+        const result = fromTry(() => JSON.parse(cachedData) as HolidaysData)
 
         if (result.isLeft()) {
           request.log.error("Не удалось считать данные из Redis", result.value)
@@ -183,11 +213,11 @@ export default async function (fastify: FastifyInstance) {
 
         request.log.info("Данные из Redis успешно считаны")
         return createTimeReplyMessage(
-          createMessageContentFromHolydaysData(result.value, today),
+          createMessageContentFromHolidaysData(result.value, today),
         )
-      }*/
+      }
 
-      const requestResult = await fetchHolydays(today)
+      const requestResult = await fetchHolidays(today)
 
       if (requestResult.isLeft()) {
         request.log.error(
@@ -199,17 +229,17 @@ export default async function (fastify: FastifyInstance) {
         )
       }
 
-      /*redisClient.set(
+      redisClient.set(
         cacheKey,
         JSON.stringify(requestResult.value),
         "EX",
         172_800,
-      )*/
+      )
 
       request.log.info("Данные успешно запрошены")
       return createTimeReplyMessage(
-        createMessageContentFromHolydaysData(requestResult.value, today),
+        createMessageContentFromHolidaysData(requestResult.value, today),
       )
-    },
-  )
+    }
+  })
 }
