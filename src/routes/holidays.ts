@@ -87,7 +87,7 @@ function createMessageContentFromHolidaysData(
     data.nameDays.map((d) => `- ${d}`).join("\n"),
     "### События в истории",
     data.events.map((i) => `- ${i}`).join("\n"),
-    `Праздники взяты с сайта: kakoysegodnyaprazdnik.ru`,
+    `Праздники взяты с сайта: [kakoysegodnyaprazdnik.ru](kakoysegodnyaprazdnik.ru)`,
   ].join("\n")
 }
 
