@@ -91,7 +91,7 @@ function createMessageContentFromHolidaysData(
   ].join("\n")
 }
 
-function createRedisKey(date: Date): string {
+function createCacheKey(date: Date): string {
   return date.toISOString().split("T")[0] as string
 }
 
@@ -151,7 +151,7 @@ export default async function (fastify: FastifyInstance) {
         return
       }
 
-      const cacheKey = createRedisKey(now)
+      const cacheKey = createCacheKey(now)
 
       redisClient.set(
         cacheKey,
@@ -191,7 +191,7 @@ export default async function (fastify: FastifyInstance) {
 
       const today = new Date()
       fastify.log.info(`Получаем праздники для ${today.toISOString()}`)
-      const cacheKey = createRedisKey(today)
+      const cacheKey = createCacheKey(today)
       const isNoCache = Boolean(
         (
           request.body as {
